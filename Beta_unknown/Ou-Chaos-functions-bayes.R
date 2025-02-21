@@ -1,18 +1,17 @@
 Gibb_OU_chaos_beta=function(Xd,nb,deltad,alpha,lambda,K,M,Nrow,Nbm)
 {
-  #beta=beta_prior(lambda)
+  beta=beta_prior(lambda)
   
   betas=numeric(M)
   betas_norm=numeric(M)
   
   betas_aux=numeric(M+K)
-  betas_aux[1]=beta0
-  z1 = 1/betas_aux[1]
+  betas_aux[1]=beta
+  z1 = 1/(betas_aux[1]^2)
   
   for(i in 2:(K+M))
   {
-    #print(i)
-    print(c(i,betas_aux[i-1],mean(betas_aux[1:i-1])))
+    print(c(i,1/sqrt(betas_aux[i-1]),mean(1/sqrt(betas_aux[1:i-1]))))
     betas_aux[i]= pos_beta(Xd,nb,deltad,betas_aux[i-1],alpha,Nrow,Nbm,z1)
     z1 = betas_aux[i]
     if(i>K){
@@ -20,47 +19,43 @@ Gibb_OU_chaos_beta=function(Xd,nb,deltad,alpha,lambda,K,M,Nrow,Nbm)
       betas[j]=betas_aux[i]
     }
   }
-  #betas = rbind(betas)
   return(betas)
 }
 ###########  paso 1
 beta_prior=function(lambda)
 {
-  beta=rexp(1,2*lambda)
+  beta=rexp(1,lambda)
   return(beta)
 }
 ######  Paso 3      #distribucion posterior de alpha
 pos_beta=function(Xd,nb,deltad,beta,alpha,Nrow,Nbm,z1)
 {
   delta=deltad/nb
-  betas2 = numeric(500)
-  betas2_aux = numeric(1000)
+  betas2 = numeric(1)
+  betas2_aux = numeric(2000)
   betas2_aux[1] = z1    
-  cb = comp_Bridge(Xd,nb,delta,alpha,1/z1)
+  cb = comp_Bridge(Xd,nb,delta,alpha,1/sqrt(z1))
   n = length(Xd)
-  Kv = Ks(cb,n,delta,nb,lambda,alpha,1/z1)
-  #print(c(Kv[2]/(2*Kv[1]),sqrt(1/(2*Kv[1]))))
+  Jv = Ks(cb,n,delta,nb,lambda,alpha,1/sqrt(z1))
   for (i in 2:2000){
     Cond = TRUE
     while(Cond){
       int = numeric(n)
-      z2 = rtruncnorm(1,a = 0,b=Inf, mean = Kv[2]/(2*Kv[1]),sd = sqrt(1/(2*Kv[1])))
-      #print(c(z1,z2,z2/z1))
-      Weigth = exp(-(lambda)*(1/z2-1/z1))*(z1/z2)^(n-1)
+      z2 = rgamma(1,shape = (n+1)/2,scale= 1/Jv[1])
+      Weigth = exp(-(lambda)*(sqrt(1/z2)-sqrt(1/z1))-Jv[2]*(sqrt(z2)-sqrt(z1)))
       Prt = min(1,Weigth)
       ut = runif(1,0,1)
       Cond = is.na(ut<=Prt)
-      #print(c(i,Prt,z1,z2))
       betas2_aux[i] <- ifelse(ut<=Prt,z2,z1)
+      z1 <- betas2_aux[i]
       probs[i] <- Prt
-      if (i>500 && Cond == FALSE){
-        j = i-500
+      if (i>1999 && Cond == FALSE){
+        j = i-1999
         betas2[j] = betas2_aux[i]
-        #print(c(j,betas2[j],Cond))
       }
     }
   }
-  beta = mean(betas2)
+  beta = betas2
   z1 = beta
   return(beta)
 }
@@ -84,24 +79,20 @@ comp_Bridge=function(Xd,nb,delta,alpha,beta)
   return(cbm)
 }
 #Calcular las constantes Ks
-Ks=function(cb,n,delta,nb,lambda,alpha,beta)
+Ks=function(cb,n,delta,nb,lambda,alpha,beta_ant)
 {
   nc=length(cb)
-  iis<-i_i_s(Xd,beta,nb,Tred)
-  C1 = 2 * cb
-  C2 = C1*iis
-  C3 = C2/beta0
-  C4 = iis^2
-  C5 = 2 * C4/beta0
-  C6 = C4 / beta0^2
-  x1 = cb[1:(nc-1)]
-  x2 = cb[2:nc]
-  K1 = -((alpha/2)*(cb[1]^2-cb[nc]^2)-(1/2)*(sum((x2-x1)^2)/delta)-(1/2)*alpha^2*int_path(C4,delta)[nc-1])
-  K2 = lambda*beta^2 + (1/2)*alpha^2*int_path(C2-C5,delta)[nc-1]
-  K3 = (1/2)*(alpha*(TiempoC[1001]-TiempoC[1])-alpha^2*int_path(cb^2,delta)[nc-1]-alpha^2*int_path(C6-C3,delta)[nc-1])
-  K4 = exp((K2^2)/(4*K1)+K3)
-  K=c(K1,K2,K3,K4)
-  return(K)
+  C1 <-i_i_s(Xd,beta,nb,Tred)
+  x1 = Xd[1:(n-1)]
+  x2 = Xd[2:n]
+  K1 = (Xd[n]^2-Xd[1]^2)/2
+  K2 = (1/2)*(sum((x2-x1)^2)/deltad)
+  K3 = int_path(C1/2,delta)[nc-1]
+  K4 = (1/2)*int_path(2*cb*C1-2*(C1^2)/beta_ant,delta)[nc-1]
+  J3 = alpha*K1+K2+(alpha^2)*K3 
+  J4 = (alpha^2)*K4
+  J=c(J3,J4)
+  return(J)
 }
 ################################################################################
 i_i_s<-function(Xd,beta,nb,Tred)
@@ -110,7 +101,7 @@ i_i_s<-function(Xd,beta,nb,Tred)
   # X: Datos reducidos, beta: parámetro a estimar, delta: tamaño de paso ajustado
   # nbri: número de puntos entre puente, tred: vector de tiempo de datos reducidos.
   # Ouput: Evaluación de la funcion l^i_s
-  
+  Tredd = Tred
   k=length(Xd)-1
   t=matrix(0,nrow=1,ncol=k*(nb)+1)
   t=TiempoC

@@ -1,7 +1,7 @@
-X_data0.1 <- read.csv("Data_Alphas_1_beta0.1_T10_lambda5.799999.csv",header = T)
-X_data0.5 <- read.csv("Data_Alphas_1_beta0.5_T10_lambda4.csv", header = T)
-X_data0.8 <- read.csv("Data_Alphas_1_beta0.8_T10_lambda1.8.csv", header = T)
-X_data1.0 <- read.csv("Data_Alphas_1_beta1.0_T10_lambda0.01.csv", header = T)
+X_data0.1 <- read.csv("Data_Alphas_1_beta0.1_T1_lambda1.4.csv",header = T)
+X_data0.5 <- read.csv("Data_Alphas_1_beta0.5_T1_lambda1.2.csv", header = T)
+X_data0.8 <- read.csv("Data_Alphas_1_beta0.8_T1_lambda1.05.csv", header = T)
+X_data1.0 <- read.csv("Data_Alphas_1_beta1.0_T1_lambda0.75.csv", header = T)
 
 layout(matrix(c(1,1,1,1), nrow = 2, ncol = 2, byrow = TRUE))
 plot(density(X_data0.1[,2]),main = expression(paste("Densities of ", alpha)), 
@@ -15,3 +15,10 @@ legend("topright",
                   expression(paste(beta," = 0.8,",lambda, " = 1.8")), 
                   expression(paste(beta," = 1.0,",lambda, " = 0.01"))),lty = c(1, 1), 
        col = c("black","red","blue","darkgreen"),cex = 1.0,lwd = 3)
+
+
+plot(alphas[1,],main="Truncated Normal",xlab ="", ylab=expression(alpha))
+abline(h=mean_alphas[1], col="red")
+
+quantile(X_data1.0[,2],prob = c(0.025,0.975))
+mean(X_data1.0[,2])

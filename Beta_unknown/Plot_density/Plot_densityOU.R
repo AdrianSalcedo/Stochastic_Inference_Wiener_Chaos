@@ -1,6 +1,6 @@
 library(ggplot2)
 library(dplyr)
-
+beta=1
 X_data0.1 <- read.csv("Chaos_Data_alpha0.1_beta1.0_T10_lambda805.csv",header = T)
 X_data0.5 <- read.csv("Chaos_Data_alpha0.5_beta1.0_T10_lambda805.csv", header = T)
 X_data0.8 <- read.csv("Chaos_Data_alpha0.8_beta1.0_T10_lambda840.csv", header = T)
@@ -32,3 +32,13 @@ legend("topright",
        col = c("black","red","blue","darkgreen"),cex = 1.0,lwd = 3)
 
 
+layout(matrix(c(1,2), nrow = 1, ncol = 2, byrow = TRUE))
+plot(1/X_data0.5[,2],main="Truncated Normal",xlab ="", ylab=expression(beta),ylim=c(0.99,1.01))
+abline(h=mean(1/X_data0.5[,2]), col="red")
+abline(h=beta, col="blue")
+#plot(alphas[2,],main="Normal",xlab ="Sample size", ylab=expression(alpha))
+#abline(h=alpha, col="blue")
+#abline(h=mean_alphas[2], col="red")
+hist(1/X_data0.5[,2],prob = TRUE,main = expression(paste("Densities of ", beta)), 
+     xlab=expression(beta),col= "white", ylim = c(0,600))
+lines(density(1/X_data0.5[,2]), col= "red")

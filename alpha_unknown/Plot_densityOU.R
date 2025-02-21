@@ -15,3 +15,18 @@ legend("topright",
                   expression(paste(beta," = 0.8,",lambda, " = 1.8")), 
                   expression(paste(beta," = 1.0,",lambda, " = 0.01"))),lty = c(1, 1), 
        col = c("black","red","blue","darkgreen"),cex = 1.0,lwd = 3)
+
+layout(matrix(c(1,2), nrow = 1, ncol = 2, byrow = TRUE))
+plot(X_data0.8[,2],main="",xlab ="", ylab=expression(alpha))
+abline(h=mean(X_data0.8[,2]), col="red")
+abline(h=1.0, col="blue")
+legend(x= "topleft",inset = c(-0.05, -0.2),bty = "n", legend=c(expression(paste(alpha, " real")), expression(paste(alpha, " mean"))), 
+       fill = c("blue","red"),horiz = TRUE, xpd = TRUE) 
+#plot(alphas[2,],main="Normal",xlab ="Sample size", ylab=expression(alpha))
+#abline(h=alpha, col="blue")
+#abline(h=mean_alphas[2], col="red")
+hist((X_data0.8[,2]),prob = TRUE,main = " ", 
+     xlab=expression(alpha),col= "white")
+lines(density(X_data0.8[,2]), col= "red")
+#legend("topright",legend = c("Truncated", "Normal"),lty = c(1, 1), col = c(1, 2),
+#       cex = 0.8,lwd = 2)

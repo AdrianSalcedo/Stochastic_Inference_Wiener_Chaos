@@ -1,12 +1,3 @@
-##########
-# a =Xd[i]
-# b=Xd[i+1]
-# thetaOU= alpha 
-# sigmaOU=beta 
-# n= nbri
-# delta= delta/nbri
-# nb =Nbm 
-# M= Nrow
 BridgeChaos=function(a,b,thetaOU,sigmaOU,n,delta,nb,M,ini,fin)
 {
   OUchaos=NULL

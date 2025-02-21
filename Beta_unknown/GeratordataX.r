@@ -2,10 +2,10 @@
 source("EM_Ou_Estimador_Stefano.r")
 library('truncnorm')
 #parámetros del proceso
-alpha<-0.8
-beta<-1.0
+alpha<-1.0
+beta<-0.4
 t0 <- 0
-Ti<- 10
+Ti<- 1
 n<- 1000
 delta <- (Ti-t0)/n
 #edo inicial
@@ -26,7 +26,7 @@ Est_alpha<- Est_stefano_alpha(X,delta)
 Est_beta <- Est_stefano_beta(X,Est_alpha,delta)
 print(c(Est_alpha,Est_beta))
 
-write.csv(X,"PathX_A0.8_B1.0_T10_n1000.csv")
+write.csv(X,"PathX_A1.0_B0.4_T1_n1000.csv")
 
 #PathX_A0.1_B1.0_T10_n1000.csv
 #PathX_A0.5_B1.0_T10_n1000.csv

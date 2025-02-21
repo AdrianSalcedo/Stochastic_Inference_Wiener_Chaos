@@ -2,8 +2,8 @@
 source("EM_Ou_Estimador_Stefano.r")
 library('truncnorm')
 #parámetros del proceso
-alpha<-0.5
-beta<-0.5
+alpha<-0.05
+beta<-0.001
 t0 <- 0
 Ti<- 1
 n<- 1000
@@ -20,10 +20,10 @@ x0 <- 0
 #K<- 1000
 #número de puentes a utilizar en cada iteración
 #Nrow<- 1
-
+while (abs(alpha-Est_alpha)>0.001){
 X<- OU_EULER(x0,n,Ti,alpha,beta)
 Est_alpha<- Est_stefano_alpha(X,delta)
 Est_beta <- Est_stefano_beta(X,Est_alpha,delta)
 print(c(Est_alpha,Est_beta))
-
-write.csv(X,"PathX_A0.5_B0.5_T1_n1000_2.csv")
+}
+write.csv(X,"PathX_A0.05_B0.001_T1_n1000.csv")

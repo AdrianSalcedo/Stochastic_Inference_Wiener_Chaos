@@ -1,28 +1,25 @@
-##########
+# ##########
 # a =Xd[i]
 # b=Xd[i+1]
-# thetaOU= alpha 
-# sigmaOU=beta 
+# thetaOU= alpha
+# sigmaOU=beta
 # n= nbri
 # delta= delta/nbri
-# nb =Nbm 
+# nb =Nbm
 # M= Nrow
 BridgeChaos=function(a,b,thetaOU,sigmaOU,n,delta,nb,M,ini,fin)
 {
   OUchaos=NULL
-  M_Y=mat.or.vec(M,fin)
+  
   TiempC <- TiempoC[ini:fin]
   TF <-tail(TiempC,1)
   TL<-length(TiempoC[ini:fin])
+  M_Y=mat.or.vec(1,TL)
   #### propagator for |m|=0
   X_0 <- a*exp(-thetaOU*TiempC)
   Y_0=X_0
   int1=c((TiempC[TL]-TiempC[1:(TL-1)])*Integrate_Xms(1/(TF-TiempC[-TL]),X_0),0)
   
-  for(i in 1:fin)
-  {
-    Y_0[i]= a+(b-a)*TiempC[i]/TF+int1[i]
-  }
   #### propagator for |m|=1
   cosenos=fcosenos(nb,TiempC)
   senos=fsenos(nb,TiempC)
@@ -33,8 +30,12 @@ BridgeChaos=function(a,b,thetaOU,sigmaOU,n,delta,nb,M,ini,fin)
     Y_1=rbind(Y_1,c((fin-TiempC[1:(TL-1)])*Integrate_Xms(1/(fin-TiempC[-TL]),X_1),0))
     
   }
+  for(i in 1:TL)
+  {
+    Y_0[i]= a+(b-a)*(TiempC[i]-TiempoC[ini])/(TF-TiempoC[ini])+int1[i]
+  }
   ##########################################
-  for (k in 1:M){
+  for (k in 1:1){
     #print(k)
     
     Xis = rnorm(nb,mean=0,sd=1)

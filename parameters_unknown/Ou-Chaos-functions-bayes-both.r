@@ -1,17 +1,15 @@
-#
-#
-Gibb_OU_chaos_pars<-function(Xd,nb,deltad,alpha,beta,lambda_1,lambda_2,K,M,Nrow,Nbm)
+Gibb_OU_chaos_pars<-function(Xd,nb,deltad,lambda_1,lambda_2,K,M,Nrow,Nbm)
 {
-  #alpha<-alpha_prior(lambda_1)
-  #beta <-beta_prior(lambda_2)
+  alpha<-alpha_prior(lambda_1)
+  beta <-beta_prior(lambda_2)
   alphas=numeric(M)
   alphas_aux=numeric(M+K)
   alphas_aux[1]=alpha
   
   betas=numeric(M)
   betas_aux=numeric(M+K)
-  betas_aux[1]=beta0
-  z1 = 1/betas_aux[1]
+  betas_aux[1]=beta
+  z1 = 1/betas_aux[1]^2
   
   pars=matrix(0,M,2)
   pars_aux=matrix(0,M+K,2)
@@ -20,7 +18,7 @@ Gibb_OU_chaos_pars<-function(Xd,nb,deltad,alpha,beta,lambda_1,lambda_2,K,M,Nrow,
   for(i in 2:(K+M))
   {
     #print(i)
-    print(c(i,alphas_aux[i-1],betas_aux[i-1],mean(alphas_aux[1:i-1]),mean(betas_aux[1:i-1])))
+    print(c(i,alphas_aux[i-1],sqrt(1/betas_aux[i-1])))
     pars_aux[i,] = posterior(Xd,nb,deltad,betas_aux[i-1],alphas_aux[i-1],Nrow,Nbm,z1)
     alphas_aux[i] = pars_aux[i,1]
     betas_aux[i] = pars_aux[i,2]
@@ -40,63 +38,53 @@ alpha_prior=function(lambda_1)
 }
 beta_prior<-function(lambda_2)
 {
-  beta<- rexp(1,2*lambda_2)
+  beta<- rexp(1,lambda_2)
   return(beta)
 }
 ####### distribucion posterior
 posterior<-function(Xd,nb,deltad,beta,alpha,Nrow,Nbm,z1)
 {
   delta=deltad/nb
-  betas2 = numeric(500)
+  betas2 = numeric(1)
   betas2_aux = numeric(1000)
-  alphas2 = numeric(500)
-  alphas2_aux = numeric(1000)
-  alphas2_aux[1] = alpha 
+  alpha2 = numeric(1)
   betas2_aux[1] = z1    
   Kv9_aux = numeric(1000)
-  cb = comp_Bridge(Xd,nb,delta,alpha,1/z1)
+  cb = comp_Bridge(Xd,nb,delta,alpha,sqrt(1/z1))
   n = length(Xd)
-  Kv = Ks(cb,n,delta,nb,lambda_1,lambda_2,alpha,1/z1)
+  Kv = Ks(cb,n,delta,nb,lambda_1,lambda_2,alpha,sqrt(1/z1))
   #print(Kv[3]/(2*Kv[2]))
   for (i in 2:1000){
     Cond = TRUE
     while(Cond){
-      int = numeric(n)
-      mean_beta <- Kv[3]/(2*Kv[2])
-      sd_beta <- sqrt(1/Kv[2])
-      z2 = rtruncnorm(1,a = 0,b=Inf, mean = mean_beta,sd = sd_beta)
-      #print(c(z1,z2,z2/z1))
-      K8z1 = exp(((lambda_2*(1/z2)^2)^2-(lambda_2*(1/z1)^2)^2)/(2*Kv[2]))
-      K9z1 = Kv[5]*(z1 + Kv[6]/(2*Kv[5]))^2
-      K9z2 = Kv[5]*(z2 + Kv[6]/(2*Kv[5]))^2
-      K10z2 <- exp((Kv[1]^2)/(8*(Kv[7]+K9z2))-(Kv[1]^2)/(8*(Kv[7]+K9z1)))
-      Weigth_beta = (K8z1*K10z2)*sqrt((Kv[7]+K9z1)/(Kv[7]+K9z2))*exp(-lambda_2*(1/z2-1/z1))*(z1/z2)^(n-1)
-      Prt1 = min(1,Weigth_beta)
+
+      z2 = rgamma(1,shape = (n-1)/2,scale=1/(Kv[2]))
+      J5 = Kv[6]-Kv[1]*z2-lambda_1
+      J5p = Kv[6]-Kv[1]*z1-lambda_1
+      J6 = Kv[3]*z2+Kv[4]*sqrt(z2)+Kv[5]
+      J6p = Kv[3]*z1+Kv[4]*sqrt(z1)+Kv[5]
+      Weigth_beta = ((1/sqrt(J6p))/(1/sqrt(J6)))*exp(-lambda_2*(sqrt(1/z2)-sqrt(1/z1))+(J5^2)/(4*J6)-(J5p^2)/(4*J6p))
+      Prt1 = min(1,1)
       ut = runif(1,0,1)
       Cond1 = is.na(ut<=Prt1)
       betas2_aux[i] <- ifelse(ut<=Prt1,z2,z1)
-      Kv9_aux[i] <- ifelse(ut<=Prt1,K9z2,K9z1)
-      ##alpha part
-      mean_alpha <- Kv[1]/(2*(Kv[7]+Kv9_aux[i]))
-      sd_alpha <- sqrt(1/((Kv[7]+Kv9_aux[i])))
-      alphas2_aux[i] = rtruncnorm(1,a = 0,b=Inf, mean = mean_alpha,sd = sd_alpha)
-      Weigth_alpha = sqrt(2*pi)/(sqrt(Kv[7]+Kv9_aux[i]))
-      Prt2 = min(1,Weigth_alpha)
-      ut = runif(1,0,1)
-      Cond2 = is.na(ut<=Prt2)
-      alphas2_aux[i] <- ifelse(ut<=Prt2,alphas2_aux[i],alphas2_aux[i-1])
-      Cond = Cond1 && Cond2
-      #print(c(i,Prt1,Prt2,alphas2_aux[i-1],alphas2_aux[i],z1,z2))
-      #print(c(i,alphas2_aux[i],betas2_aux[i]))
-      if (i>500 && Cond == FALSE){
-        j = i-500
-        alphas2[j] = alphas2_aux[i]
+      z1 <- betas2_aux[i]
+      Cond = Cond1
+      if (i>999 && Cond == FALSE){
+        j = i-999
         betas2[j] = betas2_aux[i]
       }
     }
   }
-  alpha = mean(alphas2)
-  beta = mean(betas2)
+  J5b = Kv[6] - Kv[1]*z1-lambda_1
+  J6b = Kv[3]*z1+Kv[4]*sqrt(z1)+Kv[5]
+  ##alpha part
+  mean_alpha <- J5b/(2*J6b)
+  sd_alpha <- sqrt(1/(2*J6b))
+  alpha2 = rtruncnorm(1,a = 0,b=Inf, mean = mean_alpha,sd = sd_alpha)
+  
+  alpha = alpha2
+  beta = betas2
   z1 = beta
   pars = rbind(alpha,beta)
   return(pars)
@@ -121,29 +109,20 @@ comp_Bridge<-function(Xd,nb,delta,alpha,beta)
   return(cbm)
 }
 #Calcular las constantes Ks
-Ks=function(cb,n,delta,nb,lambda_1,lambda_2,alpha,beta)
+Ks=function(cb,n,delta,nb,lambda_1,lambda_2,alpha,beta_ant)
 {
   nc=length(cb)
-   iis<-i_i_s(Xd,beta,nb,Tred)
-   C1 = 2*cb
-   C2 = C1*iis
-   C3 = C2/beta0
-   C4 = iis^2
-   C5 = 2*C4/beta0
-   C6 = C4/beta0^2
-   x1 = cb[1:(nc-1)]
-   x2 = cb[2:nc]
-   K1 = (cb[1]^2-cb[nc]^2) + TiempoC[1001]-TiempoC[1] - 2*lambda_1
-   K2 = sum((x2-x1)^2)/delta
-   K3 = lambda_2*beta^2
-   K4 = int_path(cb^2,delta)[nc-1] + int_path(C6-C3,delta)[nc-1]
-   K5 = int_path(C4,delta)[nc-1]
-   K6 = int_path(C2-C5,delta)[nc-1]
-   K7 = K4 - ((K6)^2)/(4*K5)
-   K8 = 2*lambda_1*lambda_2*exp((K1^2)/(8*K7)+(K3^2)/(2*K2))
-   K9 = K5*(1/beta + K6/(2*K5))^2
-   K10 = exp((K1^2)/(8*(K7+K9))-(K1^2)/(8*K7))
-   K = c(K1,K2,K3,K4,K5,K6,K7,K8,K9,K10)
+   C1 <-i_i_s(Xd,beta,nb,Tred)
+   
+   x1 = Xd[1:(n-1)]
+   x2 = Xd[2:n]
+   K1 = (Xd[n]^2-Xd[1]^2)/2
+   K2 = sum((x2-x1)^2)/(2*deltad)
+   K3 = int_path((C1^2)/2,delta)[nc-1]
+   K4 = int_path((1/2)*(2*cb*C1-((2*C1^2)/beta_ant)),delta)[nc-1]
+   K5 = int_path((1/2)*(2*cb^2+(C1/beta_ant)^2-(2*cb*C1/beta_ant)),delta)[nc-1]
+   K6 = (TiempoC[1001]-TiempoC[1])/2
+   K = c(K1,K2,K3,K4,K5,K6)
   return(K)
 }
 ################################################################################
